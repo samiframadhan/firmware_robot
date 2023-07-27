@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message motorData {
+    int32 speed = 10;
+    bool direction = 1;
+}
