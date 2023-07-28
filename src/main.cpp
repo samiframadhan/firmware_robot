@@ -3,6 +3,13 @@
 #include "pb_encode.h"
 #include "pb_decode.h"
 #include "motordata.pb.h"
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+
+const char* ssid = "UpdateESP32";
+const char* password = "UpdateUnpad2023";
 
 Motor motor_kiri;
 Motor motor_kanan;
@@ -18,15 +25,14 @@ motor_configs right_motor;
 
 void setup() {
   
-  Serial.begin(115200);
-
-  while (!Serial.available())
-  {
-    delay(500);
-    
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    ESP_LOGE(TAG, "Connection Failed! Rebooting...");
+    delay(5000);
+    ESP.restart();
   }
   
-
   // put your setup code here, to run once:
   left_motor.pin_direction  = 13;   // VR
   left_motor.pin_enable     = 4;    // EN/EL
