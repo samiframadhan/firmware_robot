@@ -8,8 +8,8 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 
-const char* ssid = "UpdateESP32";
-const char* password = "UpdateUnpad2023";
+const char* ssid = "Nintendo";
+const char* password = "papahbaik";
 
 Motor motor_kiri;
 Motor motor_kanan;
