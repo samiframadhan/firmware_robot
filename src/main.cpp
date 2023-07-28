@@ -62,11 +62,9 @@ void setup() {
   motorData motormsg = motorData_init_zero;
   pb_istream_t s = pb_istream_from_buffer(buffer, message_length);
   status = pb_decode(&s, motorData_fields, &motormsg);
-
-  Serial.begin(115200);
+  
   if(status){
-    Serial.print("Berhasil!");
-    
+    ESP_LOGE(TAG, "Status: speed = %d", motormsg.speed);
   }
 }
 
