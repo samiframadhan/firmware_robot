@@ -44,7 +44,7 @@ public:
     int64_t get_encoder();
     bool set_pwm(int pwm_val);
     int absolute(int value);
-    bool auto_speed();
+    void auto_speed();
 
     Motor(/* args */);
     ~Motor();
