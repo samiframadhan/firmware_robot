@@ -17,6 +17,16 @@ motor_configs left_motor;
 motor_configs right_motor;
 
 void setup() {
+  
+  Serial.begin(115200);
+
+  while (!Serial.available())
+  {
+    delay(500);
+    
+  }
+  
+
   // put your setup code here, to run once:
   left_motor.pin_direction  = 13;   // VR
   left_motor.pin_enable     = 4;    // EN/EL

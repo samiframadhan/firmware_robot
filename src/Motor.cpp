@@ -114,7 +114,7 @@ float Motor::get_rpm(){
     return input;
 }
 
-bool Motor::auto_speed(){
+void Motor::auto_speed(){
     motor_pid.Compute();
     set_pwm(output);
 }
