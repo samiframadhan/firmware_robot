@@ -42,13 +42,13 @@ void setup() {
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      ESP_LOGE(TAG, "Start updating %s", type);
+      ESP_LOGI(TAG, "Start updating %s", type);
     })
     .onEnd([]() {
-      ESP_LOGE(TAG, "End");
+      ESP_LOGI(TAG, "End");
     })
     .onProgress([](unsigned int progress, unsigned int total) {
-      ESP_LOGE(TAG ,"Progress: %u%%\r", (progress / (total / 100)));
+      ESP_LOGI(TAG ,"Progress: %u%%\r", (progress / (total / 100)));
     })
     .onError([](ota_error_t error) {
       ESP_LOGE(TAG, "Error[%u]: ", error);
@@ -98,7 +98,7 @@ void setup() {
   status = pb_decode(&s, motorData_fields, &motormsg);
   
   if(status){
-    ESP_LOGE(TAG, "Status: speed = %d", motormsg.speed);
+    ESP_LOGI(TAG, "Status: speed = %d", motormsg.speed);
   }
 }
 
@@ -120,8 +120,8 @@ void loop() {
     float temp = (float)motor_kiri.get_encoder_clear() / 0.5;
     float temp2 = (float)motor_kanan.get_encoder_clear() / 0.5;
     // last_millis = millis();
-    ESP_LOGE(TAG, "Kiri temp: %.1f", temp);
-    ESP_LOGE(TAG, "Kanan temp: %.1f", temp);
+    ESP_LOGI(TAG, "Kiri temp: %.1f", temp);
+    ESP_LOGI(TAG, "Kanan temp: %.1f", temp);
     delay(500);
   } 
 }
