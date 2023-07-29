@@ -17,53 +17,6 @@ motor_configs right_motor;
 
 void setup() {
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    ESP_LOGE(TAG, "Connection Failed! Rebooting...");
-    delay(5000);
-    ESP.restart();
-  }
-  // Port defaults to 3232
-  ArduinoOTA.setPort(3232);
-
-  // Hostname defaults to esp3232-[MAC]
-  ArduinoOTA.setHostname("myesp32");
-
-  // No authentication by default
-  ArduinoOTA.setPassword("admin");
-
-  IPAddress ip = WiFi.localIP();
-  
-  Serial.println(ip.toString());
-
-  ArduinoOTA
-    .onStart([]() {
-      String type;
-      if (ArduinoOTA.getCommand() == U_FLASH)
-        type = "sketch";
-      else // U_SPIFFS
-        type = "filesystem";
-
-      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      ESP_LOGI(TAG, "Start updating %s", type);
-    })
-    .onEnd([]() {
-      ESP_LOGI(TAG, "End");
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      ESP_LOGI(TAG ,"Progress: %u%%\r", (progress / (total / 100)));
-    })
-    .onError([](ota_error_t error) {
-      ESP_LOGE(TAG, "Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) ESP_LOGE(TAG, "Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) ESP_LOGE(TAG, "Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) ESP_LOGE(TAG, "Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) ESP_LOGE(TAG, "Receive Failed");
-      else if (error == OTA_END_ERROR) ESP_LOGE(TAG, "End Failed");
-    });
-
-  ArduinoOTA.begin();
   
   // put your setup code here, to run once:
   left_motor.pin_direction  = 13;   // VR
@@ -118,7 +71,6 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   // uint32_t last_millis = millis();
-  ArduinoOTA.handle();
   for (size_t i = 0; i < 100; i++)
   {
     // ESP_LOGE(TAG, "Encoder: %d", motor_kiri.get_encoder());
