@@ -1,6 +1,11 @@
 syntax = "proto3";
 
 message motorData {
-    int32 speed = 10;
     bool direction = 1;
+    int32 speed = 2;
+    bool side = 3;
+}
+
+message motorsData {
+    repeated motorData motors = 1;
 }
