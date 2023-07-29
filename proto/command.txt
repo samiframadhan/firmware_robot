@@ -1,0 +1,1 @@
+python3 .\.pio\libdeps\esp32dev\Nanopb\generator\nanopb_generator.py --output-dir .\.pio\build\esp32dev\nanopb\generated-src\ --proto-path .\proto\ .\proto\motordata.proto
