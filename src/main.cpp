@@ -24,7 +24,7 @@ motor_configs left_motor;
 motor_configs right_motor;
 
 void setup() {
-  
+  Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
@@ -32,6 +32,18 @@ void setup() {
     delay(5000);
     ESP.restart();
   }
+  // Port defaults to 3232
+  ArduinoOTA.setPort(3232);
+
+  // Hostname defaults to esp3232-[MAC]
+  ArduinoOTA.setHostname("myesp32");
+
+  // No authentication by default
+  ArduinoOTA.setPassword("admin");
+
+  IPAddress ip = WiFi.localIP();
+  
+  Serial.println(ip.toString());
 
   ArduinoOTA
     .onStart([]() {
@@ -79,13 +91,22 @@ void setup() {
   right_motor.ppr           = 10;
 
   motorData message = motorData_init_zero;
+  motorsData messages = motorsData_init_zero;
 
   pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
   message.direction = true;
   message.speed = 1000;
+  message.side = 0;
+
+  // messages.motors.
 
   status = pb_encode(&stream, motorData_fields, &message);
   message_length = stream.bytes_written;
+  Serial.println(message_length);
+  
+  for(int i=0; i<message_length; i++){
+    Serial.printf("%02X", buffer[i]);
+  }
   
   motor_kiri.config(left_motor);
   motor_kanan.config(right_motor);
@@ -104,7 +125,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  uint32_t last_millis = millis();
+  // uint32_t last_millis = millis();
   ArduinoOTA.handle();
   for (size_t i = 0; i < 100; i++)
   {
@@ -116,12 +137,11 @@ void loop() {
       motor_kiri.set_pwm(i*4);
       motor_kanan.set_pwm(i*4);
     }
-    // int temp1 = millis() - last_millis;
     float temp = (float)motor_kiri.get_encoder_clear() / 0.5;
     float temp2 = (float)motor_kanan.get_encoder_clear() / 0.5;
-    // last_millis = millis();
-    ESP_LOGI(TAG, "Kiri temp: %.1f", temp);
-    ESP_LOGI(TAG, "Kanan temp: %.1f", temp);
+    // ESP_LOGI(TAG, "Kiri temp: %.1f", temp);
+    // ESP_LOGI(TAG, "Kanan temp: %.1f", temp);
+
     delay(500);
   } 
 }
