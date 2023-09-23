@@ -20,13 +20,15 @@ void Motor::config(motor_configs conf){
     motor_encoder.attach_single_edge(configs.pin_encoder, configs.pin_direction);
     pinMode(configs.pin_direction, OUTPUT);
     pinMode(configs.pin_enable, OUTPUT);
+    digitalWrite(configs.pin_direction, HIGH);
+    digitalWrite(configs.pin_enable, HIGH);
     // ESP_LOGI(TAG, "Pin Direction: %d, Pin Enable: %d", configs.pin_direction, configs.pin_enable);
-    set_pinpwm(configs.pin_pwm);
+    // set_pinpwm(configs.pin_pwm);
     if(configs.pin_pwm != 0){
         ledcAttachPin(configs.pin_pwm, this->pwm_channel);
         ledcSetup(this->pwm_channel, configs.pwm_freq, 8);
     }
-    digitalWrite(configs.pin_enable, HIGH);
+    set_pwm(LOW);
     // motor_pid.SetTunings(conf.K_P, conf.K_I, conf.K_D);
 }
 
