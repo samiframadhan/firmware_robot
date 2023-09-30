@@ -42,7 +42,7 @@ Motor motor_kanan;
 int count = 200;
 uint8_t buffer[128];
 size_t message_length;
-bool status;
+bool imu_ready;
 float left_speed;
 float right_speed;
 long last_mill;
@@ -72,7 +72,7 @@ void setup() {
   right_motor.pin_pwm       = 19;   // VR
   right_motor.pin_encoder   = 15;   // Signal
   right_motor.pwm_freq      = 1000;
-  right_motor.reversed      = true;
+  right_motor.reversed      = false;
   right_motor.ppr           = 10;
   
   motor_kiri.config(left_motor);
@@ -92,6 +92,8 @@ void setup() {
   // End: Initialize ROS
 
   // Start: Initialize IMU
+
+  imu_ready = false;
 
   //imu_setup();
 
@@ -159,6 +161,7 @@ void imu_setup(){
     imu.CalibrateAccel(6);
     imu.CalibrateGyro(6);
     imu.setDMPEnabled(true);
+    imu_ready = true;
   }
 }
 
