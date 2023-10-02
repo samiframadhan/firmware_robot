@@ -16,6 +16,8 @@ float acc_stddev = 0.033; // Dari sini https://robotics.stackexchange.com/questi
 float gyro_stddev = 0.033;
 float orientation_stddev = 0.0;
 
+float wheelbase = 0.2;
+
 Quaternion imuQ;
 VectorInt16 aa;
 VectorInt16 gyro;
@@ -24,6 +26,8 @@ VectorInt16 aaWorld;
 VectorFloat gravity;
 
 sensor_msgs::Imu imu_ros_msg;
+rovit_navsys::debug motor_msg;
+float motor_data_array[7];
 
 MPU6050 imu;
 
@@ -36,6 +40,7 @@ void set_imu_offset();
 ros::NodeHandle nh;
 
 ros::Publisher imu_ros_pub("imu/data_raw", &imu_ros_msg);
+ros::Publisher motor_pub("motor", &motor_msg);
 
 Motor motor_kiri;
 Motor motor_kanan;
@@ -46,6 +51,9 @@ bool imu_ready;
 float left_speed;
 float right_speed;
 long last_mill;
+long last_mill2;
+int test_pwm = 0;
+bool up = false;
 
 void cmdVelCb(const geometry_msgs::Twist& cmd_vel);
 
@@ -55,8 +63,10 @@ static char* TAG = "Debugging";
 motor_configs left_motor;
 motor_configs right_motor;
 
+void send_motor();
+
 void setup() {
-  Serial.begin(115200);
+  // Serial.begin(115200);
   
   // put your setup code here, to run once:
   left_motor.pin_direction  = 12;   // Z/F
@@ -65,7 +75,8 @@ void setup() {
   left_motor.pin_encoder    = 5;    // Signal
   left_motor.pwm_freq       = 1000;
   left_motor.reversed       = true;
-  left_motor.ppr            = 10;
+  left_motor.ppr            = 47;
+  left_motor.K_P            = 1.0;
 
   right_motor.pin_direction = 18;   // Z/F
   right_motor.pin_enable    = 14;   // EN/EL
@@ -73,10 +84,13 @@ void setup() {
   right_motor.pin_encoder   = 15;   // Signal
   right_motor.pwm_freq      = 1000;
   right_motor.reversed      = false;
-  right_motor.ppr           = 10;
+  right_motor.ppr           = 47;
+  right_motor.K_P           = 1.0;
   
   motor_kiri.config(left_motor);
   motor_kanan.config(right_motor);
+  motor_kiri.change_sp(0.0);
+  motor_kanan.change_sp(0.0);
   // motor_kanan.set_pindir(15, true);
   // motor_kanan.set_pinpwm(13);
   // motor_kanan.set_enable(12);
@@ -86,8 +100,10 @@ void setup() {
   nh.getHardware()->setBaud(115200);
   nh.initNode();
   nh.subscribe(cmdVel);
+  nh.advertise(motor_pub);
 
   last_mill = millis();
+  last_mill2 = millis();
 
   // End: Initialize ROS
 
@@ -104,15 +120,18 @@ void loop() {
   // put your main code here, to run repeatedly:
   // uint32_t last_millis = millis();
   nh.spinOnce();
-  
-  if(last_mill - millis() > 1000){
+
+  if(millis() - last_mill > 100){
+    send_motor();
+    
     last_mill = millis();
-    motor_kanan.set_pwm(right_speed * 100);
-    motor_kiri.set_pwm(left_speed * 100);
-    String test(left_speed);
-    String test2(right_speed);
-    String res("PWM left:" + test + ", right:" + test2);
-    nh.loginfo(res.c_str());
+  }
+
+  if(millis() - last_mill2 > 100){
+    motor_kanan.auto_speed();
+    motor_kiri.auto_speed();
+    
+    last_mill2 = millis();
   }
   
   // for (size_t i = 0; i < 100; i++)
@@ -134,9 +153,41 @@ void loop() {
   // } 
 }
 
+void send_motor(){
+  motor_msg.header.stamp = nh.now();
+  motor_msg.leftSpeed = motor_kiri.get_rpm();
+  motor_msg.rightSpeed = motor_kanan.get_rpm();
+  motor_data_array[0] = left_speed;
+  motor_data_array[1] = right_speed;
+  motor_data_array[2] = motor_kanan.get_pid_input();
+  motor_data_array[3] = motor_kanan.get_pwm();
+  motor_data_array[4] = motor_kiri.get_pid_input();
+  motor_data_array[5] = motor_kiri.get_pwm();
+  motor_msg.data_length = 6;
+  motor_msg.data = motor_data_array;
+  motor_pub.publish(&motor_msg);
+  nh.spinOnce();
+}
+
 void cmdVelCb(const geometry_msgs::Twist& data){
-  left_speed = data.linear.x - data.angular.z * (0.2 / 2);
-  right_speed = data.linear.x + data.angular.z * (0.2 / 2);
+  // rpm = 60/(2pi x r) x v
+  // rpm = 60/(2pi x 0.08) x v
+  // rpm = 119.366207319
+
+  // differential drive:
+  // 
+  left_speed = data.linear.x - data.angular.z * (wheelbase / 2);  // satuan m/s
+  left_speed = left_speed * 119.366207319;                        // satuan rpm
+  String val(left_speed);
+  String res("Kiri" + val);
+  nh.loginfo(val.c_str());
+  motor_kiri.change_sp(left_speed);
+  right_speed = data.linear.x + data.angular.z * (wheelbase / 2); // satuan m/s
+  right_speed = right_speed * 119.366207319;                      // satuan rpm
+  String val_r(right_speed);
+  String res2("Kanan = "+ val_r);
+  nh.loginfo(res2.c_str());
+  motor_kanan.change_sp(right_speed);
 }
 
 // Start: IMU Functions

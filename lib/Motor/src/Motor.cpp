@@ -4,7 +4,7 @@ uint8_t Motor::channel = 0;
 
 static char *TAG = "Motor";
 
-Motor::Motor() : motor_pid(&set_point, &input, &output)
+Motor::Motor() : motor_pid(&input, &output, &set_point)
 {
     pwm_channel = channel;
     channel++;
@@ -24,12 +24,14 @@ void Motor::config(motor_configs conf){
     digitalWrite(configs.pin_enable, HIGH);
     // ESP_LOGI(TAG, "Pin Direction: %d, Pin Enable: %d", configs.pin_direction, configs.pin_enable);
     // set_pinpwm(configs.pin_pwm);
+    
     if(configs.pin_pwm != 0){
         ledcAttachPin(configs.pin_pwm, this->pwm_channel);
         ledcSetup(this->pwm_channel, configs.pwm_freq, 8);
     }
     set_pwm(LOW);
-    // motor_pid.SetTunings(conf.K_P, conf.K_I, conf.K_D);
+    motor_pid.SetTunings(conf.K_P, conf.K_I, conf.K_D);
+    motor_pid.SetMode(QuickPID::Control::automatic);
 }
 
 void Motor::set_pinpwm(int pinpwm){
@@ -109,16 +111,38 @@ int64_t Motor::get_encoder(){
     return count;
 }
 
-float Motor::get_rpm(){
+float Motor::update_rpm(){
     uint32_t current_duration = millis() - last_millis;
-    input = (get_encoder_clear())/configs.ppr/current_duration;
+    rpm = (get_encoder_clear())/configs.ppr/current_duration;
     last_millis = millis();
-    return input;
+    return rpm;
+}
+
+float Motor::get_rpm(){
+    return rpm;
 }
 
 void Motor::auto_speed(){
+    input = update_rpm();
     motor_pid.Compute();
-    set_pwm(output);
+    pwm += output;
+    set_pwm(pwm);
+}
+
+void Motor::change_sp(float sp){
+    set_point = sp;
+}
+
+int Motor::get_pwm(){
+    return pwm;
+}
+
+float Motor::get_pid_input(){
+    return input;
+}
+
+float Motor::get_pid_output(){
+    return output;
 }
 
 int Motor::absolute(int value){

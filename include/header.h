@@ -6,3 +6,4 @@
 #include "ros.h"
 #include <sensor_msgs/Imu.h>
 #include "geometry_msgs/Twist.h"
+#include "rovit_navsys/debug.h"
