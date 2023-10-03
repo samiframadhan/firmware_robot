@@ -160,9 +160,9 @@ void send_motor(){
   motor_data_array[0] = left_speed;
   motor_data_array[1] = right_speed;
   motor_data_array[2] = motor_kanan.get_pid_input();
-  motor_data_array[3] = motor_kanan.get_pwm();
+  motor_data_array[3] = motor_kanan.get_pid_output();
   motor_data_array[4] = motor_kiri.get_pid_input();
-  motor_data_array[5] = motor_kiri.get_pwm();
+  motor_data_array[5] = motor_kiri.get_pid_output();
   motor_msg.data_length = 6;
   motor_msg.data = motor_data_array;
   motor_pub.publish(&motor_msg);

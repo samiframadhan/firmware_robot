@@ -124,12 +124,14 @@ float Motor::get_rpm(){
 
 void Motor::auto_speed(){
     input = update_rpm();
+    rpm = input;
     motor_pid.Compute();
     pwm += output;
     set_pwm(pwm);
 }
 
 void Motor::change_sp(float sp){
+    // TODO: Negative sp mechanism, check reverse and take the absolute value
     set_point = sp;
 }
 
