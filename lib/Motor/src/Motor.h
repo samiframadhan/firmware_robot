@@ -32,6 +32,7 @@ private:
     uint8_t getpinpwm_channel();
     int64_t last_pulse = 0;
     uint64_t last_millis = 0;
+    bool rpm_updated = false;
 
     float update_rpm();
     

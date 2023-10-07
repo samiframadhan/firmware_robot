@@ -76,7 +76,7 @@ void setup() {
   left_motor.pwm_freq       = 1000;
   left_motor.reversed       = true;
   left_motor.ppr            = 47;
-  left_motor.K_P            = 1.0;
+  left_motor.K_P            = 0.1;
 
   right_motor.pin_direction = 18;   // Z/F
   right_motor.pin_enable    = 14;   // EN/EL
@@ -85,7 +85,7 @@ void setup() {
   right_motor.pwm_freq      = 1000;
   right_motor.reversed      = false;
   right_motor.ppr           = 47;
-  right_motor.K_P           = 1.0;
+  right_motor.K_P           = 0.1;
   
   motor_kiri.config(left_motor);
   motor_kanan.config(right_motor);
@@ -157,12 +157,12 @@ void send_motor(){
   motor_msg.header.stamp = nh.now();
   motor_msg.leftSpeed = motor_kiri.get_rpm();
   motor_msg.rightSpeed = motor_kanan.get_rpm();
-  motor_data_array[0] = left_speed;
-  motor_data_array[1] = right_speed;
-  motor_data_array[2] = motor_kanan.get_pid_input();
-  motor_data_array[3] = motor_kanan.get_pid_output();
-  motor_data_array[4] = motor_kiri.get_pid_input();
-  motor_data_array[5] = motor_kiri.get_pid_output();
+  motor_data_array[0] = motor_kanan.get_pid_input();
+  motor_data_array[1] = motor_kanan.get_pid_output();
+  motor_data_array[2] = motor_kanan.get_pwm();
+  motor_data_array[3] = motor_kiri.get_pid_input();
+  motor_data_array[4] = motor_kiri.get_pid_output();
+  motor_data_array[5] = motor_kiri.get_pwm();
   motor_msg.data_length = 6;
   motor_msg.data = motor_data_array;
   motor_pub.publish(&motor_msg);
@@ -179,7 +179,7 @@ void cmdVelCb(const geometry_msgs::Twist& data){
   left_speed = data.linear.x - data.angular.z * (wheelbase / 2);  // satuan m/s
   left_speed = left_speed * 119.366207319;                        // satuan rpm
   String val(left_speed);
-  String res("Kiri" + val);
+  String res("Kiri = " + val);
   nh.loginfo(val.c_str());
   motor_kiri.change_sp(left_speed);
   right_speed = data.linear.x + data.angular.z * (wheelbase / 2); // satuan m/s

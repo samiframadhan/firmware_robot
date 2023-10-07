@@ -31,6 +31,8 @@ void Motor::config(motor_configs conf){
     }
     set_pwm(LOW);
     motor_pid.SetTunings(conf.K_P, conf.K_I, conf.K_D);
+    motor_pid.SetSampleTimeUs(200000);
+    motor_pid.SetOutputLimits(-255, 255);
     motor_pid.SetMode(QuickPID::Control::automatic);
 }
 
@@ -114,6 +116,7 @@ int64_t Motor::get_encoder(){
 float Motor::update_rpm(){
     uint32_t current_duration = millis() - last_millis;
     rpm = (get_encoder_clear())/configs.ppr/current_duration;
+    if(set_point < 0) rpm = -rpm;
     last_millis = millis();
     return rpm;
 }
@@ -123,16 +126,39 @@ float Motor::get_rpm(){
 }
 
 void Motor::auto_speed(){
-    input = update_rpm();
-    rpm = input;
-    motor_pid.Compute();
-    pwm += output;
-    set_pwm(pwm);
+    if(!rpm_updated){
+        input = update_rpm();
+        rpm = input;
+        rpm_updated == true;
+    }
+    
+    if(motor_pid.Compute()){
+        pwm += output;
+        set_pwm(pwm);
+        rpm_updated == false;
+    }
 }
 
 void Motor::change_sp(float sp){
     // TODO: Negative sp mechanism, check reverse and take the absolute value
-    set_point = sp;
+    if(sp < 0){
+        motor_pid.SetControllerDirection(QuickPID::Action::reverse);
+        if(set_point >= 0){
+            pwm = 0;
+        }
+        set_point = sp;
+    } 
+    else if(sp > 0){
+        motor_pid.SetControllerDirection(QuickPID::Action::direct);
+        if(set_point <= 0){
+            pwm = 0;
+        }
+        set_point = sp;
+    }
+    else if(sp == 0){
+        pwm = 0;
+        set_point = 0;
+    }
 }
 
 int Motor::get_pwm(){
