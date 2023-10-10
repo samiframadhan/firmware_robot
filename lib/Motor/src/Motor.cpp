@@ -101,6 +101,7 @@ int64_t Motor::get_encoder_clear(){
         return 0;
     }
     count = motor_encoder.read_and_clear();
+    if(configs.reversed) count = -count;
     return count;
 }
 
@@ -110,6 +111,7 @@ int64_t Motor::get_encoder(){
         return 0;
     }
     count = motor_encoder.read();
+    if(configs.reversed) count = -count;
     return count;
 }
 
