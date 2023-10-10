@@ -31,7 +31,7 @@ float motor_data_array[7];
 
 MPU6050 imu;
 
-void imu_setup();
+bool imu_setup();
 void imu_update();
 void set_imu_offset();
 
@@ -52,6 +52,7 @@ float left_speed;
 float right_speed;
 long last_mill;
 long last_mill2;
+long last_mill3;
 int test_pwm = 0;
 bool up = false;
 
@@ -133,6 +134,18 @@ void loop() {
     
     last_mill2 = millis();
   }
+
+  if(!imu_ready){
+    if(millis() - last_mill3 > 1000){
+      if(imu_setup()) nh.loginfo("IMU Setup success!");
+      else nh.loginfo("Retrying imu setup....");
+    }
+  }
+  else{
+    if(millis() - last_mill3 > 100){
+      imu_update();
+    }
+  }
   
   // for (size_t i = 0; i < 100; i++)
   // {
@@ -192,23 +205,23 @@ void cmdVelCb(const geometry_msgs::Twist& data){
 
 // Start: IMU Functions
 
-void imu_setup(){
+bool imu_setup(){
   Wire.begin();
   Wire.setClock(400000);
-  imu.initialize();
   long store_millis;
   store_millis = millis();
+
   while (imu.testConnection() != 1)
   {
     if(millis() - last_mill > 1000) nh.logerror("IMU not connected");
     nh.spinOnce();
   }
+  if(imu.testConnection() != 1) return false;
+  imu.initialize();
   imu_dev_status = imu.dmpInitialize();
-  set_imu_offset();
-  if(imu_dev_status != 0){
-    nh.logerror("IMU Can't be initialized");
-  }
+  if(imu_dev_status != 0) return false;
   else{
+    set_imu_offset();
     imu.CalibrateAccel(6);
     imu.CalibrateGyro(6);
     imu.setDMPEnabled(true);
