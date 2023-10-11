@@ -102,6 +102,7 @@ void setup() {
   nh.initNode();
   nh.subscribe(cmdVel);
   nh.advertise(motor_pub);
+  nh.advertise(imu_ros_pub);
 
   last_mill = millis();
   last_mill2 = millis();
@@ -110,6 +111,8 @@ void setup() {
 
   // Start: Initialize IMU
 
+  Wire.begin();
+  Wire.setClock(400000);
   imu_ready = false;
 
   //imu_setup();
@@ -136,14 +139,17 @@ void loop() {
   }
 
   if(!imu_ready){
-    if(millis() - last_mill3 > 1000){
+    if(millis() - last_mill3 > 5000){
       if(imu_setup()) nh.loginfo("IMU Setup success!");
       else nh.loginfo("Retrying imu setup....");
+      last_mill3 = millis();
+      nh.spinOnce();
     }
   }
   else{
-    if(millis() - last_mill3 > 100){
+    if(millis() - last_mill3 > 10){
       imu_update();
+      last_mill3 = millis();
     }
   }
   
@@ -206,26 +212,38 @@ void cmdVelCb(const geometry_msgs::Twist& data){
 // Start: IMU Functions
 
 bool imu_setup(){
-  Wire.begin();
-  Wire.setClock(400000);
   long store_millis;
   store_millis = millis();
 
-  while (imu.testConnection() != 1)
+  String id(imu.getDeviceID());
+  id += " ID IMU";
+  nh.loginfo(id.c_str());
+  nh.spinOnce();
+
+  if (imu.getDeviceID() != 52)
   {
-    if(millis() - last_mill > 1000) nh.logerror("IMU not connected");
     nh.spinOnce();
+    return false;
   }
-  if(imu.testConnection() != 1) return false;
   imu.initialize();
   imu_dev_status = imu.dmpInitialize();
+  
+  String imuStat(imu_dev_status);
+  imuStat += " imu DMP status";
+  nh.loginfo(imuStat.c_str());
+  nh.spinOnce();
+  
   if(imu_dev_status != 0) return false;
   else{
     set_imu_offset();
     imu.CalibrateAccel(6);
+    nh.loginfo("Pass accel calibration");
     imu.CalibrateGyro(6);
+    nh.loginfo("Pass gyro calibration");
     imu.setDMPEnabled(true);
+    nh.loginfo("Pass enable DMP");
     imu_ready = true;
+    return true;
   }
 }
 
@@ -239,33 +257,39 @@ void set_imu_offset(){
 }
 
 void imu_update(){
-  imu.dmpGetQuaternion(&imuQ, imu_fifo_buffer);
-  imu.dmpGetGravity(&gravity, &imuQ);
-  imu.dmpGetGyro(&gyro, imu_fifo_buffer);
-  imu.dmpGetAccel(&aa, imu_fifo_buffer);
-  imu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-  imu_ros_msg.header.stamp = nh.now();
-  imu_ros_msg.orientation.w = imuQ.w;
-  imu_ros_msg.orientation.x = imuQ.x;
-  imu_ros_msg.orientation.y = imuQ.y;
-  imu_ros_msg.orientation.z = imuQ.z;
-  imu_ros_msg.angular_velocity.x = gyro.x * gyro_scale;
-  imu_ros_msg.angular_velocity.y = gyro.y * gyro_scale;
-  imu_ros_msg.angular_velocity.z = gyro.z * gyro_scale;
-  imu_ros_msg.linear_acceleration.x = aaReal.x * acc_scale;
-  imu_ros_msg.linear_acceleration.y = aaReal.y * acc_scale;
-  imu_ros_msg.linear_acceleration.z = aaReal.z * acc_scale;
-  imu_ros_msg.linear_acceleration_covariance[0] = acc_stddev;
-  imu_ros_msg.linear_acceleration_covariance[4] = acc_stddev;
-  imu_ros_msg.linear_acceleration_covariance[8] = acc_stddev;
-  imu_ros_msg.angular_velocity_covariance[0] = gyro_stddev;
-  imu_ros_msg.angular_velocity_covariance[4] = gyro_stddev;
-  imu_ros_msg.angular_velocity_covariance[8] = gyro_stddev;
-  imu_ros_msg.orientation_covariance[0] = orientation_stddev;
-  imu_ros_msg.orientation_covariance[4] = orientation_stddev;
-  imu_ros_msg.orientation_covariance[8] = orientation_stddev;
-  imu_ros_pub.publish(&imu_ros_msg);
-  nh.spinOnce();
+  if(imu.dmpGetCurrentFIFOPacket(imu_fifo_buffer) == 1){
+    imu.dmpGetQuaternion(&imuQ, imu_fifo_buffer);
+    imu.dmpGetGravity(&gravity, &imuQ);
+    imu.dmpGetGyro(&gyro, imu_fifo_buffer);
+    imu.dmpGetAccel(&aa, imu_fifo_buffer);
+    imu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+    imu_ros_msg.header.stamp = nh.now();
+    imu_ros_msg.orientation.w = imuQ.w;
+    imu_ros_msg.orientation.x = imuQ.x;
+    imu_ros_msg.orientation.y = imuQ.y;
+    imu_ros_msg.orientation.z = imuQ.z;
+    imu_ros_msg.angular_velocity.x = gyro.x * gyro_scale;
+    imu_ros_msg.angular_velocity.y = gyro.y * gyro_scale;
+    imu_ros_msg.angular_velocity.z = gyro.z * gyro_scale;
+    imu_ros_msg.linear_acceleration.x = aaReal.x * acc_scale;
+    imu_ros_msg.linear_acceleration.y = aaReal.y * acc_scale;
+    imu_ros_msg.linear_acceleration.z = aaReal.z * acc_scale;
+    imu_ros_msg.linear_acceleration_covariance[0] = acc_stddev;
+    imu_ros_msg.linear_acceleration_covariance[4] = acc_stddev;
+    imu_ros_msg.linear_acceleration_covariance[8] = acc_stddev;
+    imu_ros_msg.angular_velocity_covariance[0] = gyro_stddev;
+    imu_ros_msg.angular_velocity_covariance[4] = gyro_stddev;
+    imu_ros_msg.angular_velocity_covariance[8] = gyro_stddev;
+    imu_ros_msg.orientation_covariance[0] = orientation_stddev;
+    imu_ros_msg.orientation_covariance[4] = orientation_stddev;
+    imu_ros_msg.orientation_covariance[8] = orientation_stddev;
+    imu_ros_pub.publish(&imu_ros_msg);
+    nh.spinOnce();
+  }
+  else{
+    nh.loginfo("No imu fifo buffer...");
+    nh.spinOnce();
+  }
 }
 
 // End: IMU Functions
