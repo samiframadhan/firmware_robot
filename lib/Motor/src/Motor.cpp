@@ -131,13 +131,13 @@ void Motor::auto_speed(){
     if(!rpm_updated){
         input = update_rpm();
         rpm = input;
-        rpm_updated == true;
+        rpm_updated = true;
     }
     
     if(motor_pid.Compute()){
         pwm += output;
         set_pwm(pwm);
-        rpm_updated == false;
+        rpm_updated = false;
     }
 }
 
