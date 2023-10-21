@@ -31,7 +31,7 @@ void Motor::config(motor_configs conf){
     }
     set_pwm(LOW);
     motor_pid.SetTunings(conf.K_P, conf.K_I, conf.K_D);
-    motor_pid.SetSampleTimeUs(200000);
+    motor_pid.SetSampleTimeUs(conf.periodUs);
     motor_pid.SetOutputLimits(-255, 255);
     motor_pid.SetMode(QuickPID::Control::automatic);
 }
@@ -117,7 +117,7 @@ int64_t Motor::get_encoder(){
 
 float Motor::update_rpm(){
     uint32_t current_duration = millis() - last_millis;
-    rpm = (get_encoder_clear())/configs.ppr/current_duration;
+    rpm = get_encoder_clear()*6;
     if(set_point < 0) rpm = -rpm;
     last_millis = millis();
     return rpm;
@@ -135,7 +135,8 @@ void Motor::auto_speed(){
     }
     
     if(motor_pid.Compute()){
-        pwm += output;
+        pwm = output;
+        if(set_point < 0) pwm = -pwm;
         set_pwm(pwm);
         rpm_updated == false;
     }

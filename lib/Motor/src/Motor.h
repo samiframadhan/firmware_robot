@@ -14,6 +14,7 @@ struct motor_configs {
     bool reversed       = false;
     uint ppr            = 0;
     float K_P = 0.0, K_I = 0.0, K_D = 0.0;
+    unsigned long periodUs = 0;
 };
 
 class Motor

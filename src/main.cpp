@@ -77,7 +77,9 @@ void setup() {
   left_motor.pwm_freq       = 1000;
   left_motor.reversed       = true;
   left_motor.ppr            = 47;
-  left_motor.K_P            = 0.1;
+  left_motor.K_P            = 1.0;
+  left_motor.periodUs       = 10000;
+  // left_motor.K_I            = -3.39;
 
   right_motor.pin_direction = 18;   // Z/F
   right_motor.pin_enable    = 14;   // EN/EL
@@ -86,7 +88,8 @@ void setup() {
   right_motor.pwm_freq      = 1000;
   right_motor.reversed      = false;
   right_motor.ppr           = 47;
-  right_motor.K_P           = 0.1;
+  right_motor.K_P           = 1.0;
+  right_motor.periodUs      = 10000;
   
   motor_kiri.config(left_motor);
   motor_kanan.config(right_motor);
@@ -98,7 +101,7 @@ void setup() {
 
   // Start: Initialize ROS
 
-  nh.getHardware()->setBaud(115200);
+  nh.getHardware()->setBaud(230400);
   nh.initNode();
   nh.subscribe(cmdVel);
   nh.advertise(motor_pub);
@@ -126,32 +129,33 @@ void loop() {
   nh.spinOnce();
 
   if(millis() - last_mill > 100){
-    send_motor();
+    // send_motor();
     
     last_mill = millis();
   }
 
-  if(millis() - last_mill2 > 100){
+  if(millis() - last_mill2 > 10){
     motor_kanan.auto_speed();
     motor_kiri.auto_speed();
+    send_motor();
     
     last_mill2 = millis();
   }
 
-  if(!imu_ready){
-    if(millis() - last_mill3 > 5000){
-      if(imu_setup()) nh.loginfo("IMU Setup success!");
-      else nh.loginfo("Retrying imu setup....");
-      last_mill3 = millis();
-      nh.spinOnce();
-    }
-  }
-  else{
-    if(millis() - last_mill3 > 10){
-      imu_update();
-      last_mill3 = millis();
-    }
-  }
+  // if(!imu_ready){
+  //   if(millis() - last_mill3 > 5000){
+  //     if(imu_setup()) nh.loginfo("IMU Setup success!");
+  //     else nh.loginfo("Retrying imu setup....");
+  //     last_mill3 = millis();
+  //     nh.spinOnce();
+  //   }
+  // }
+  // else{
+  //   if(millis() - last_mill3 > 10){
+  //     imu_update();
+  //     last_mill3 = millis();
+  //   }
+  // }
   
   // for (size_t i = 0; i < 100; i++)
   // {
@@ -197,16 +201,21 @@ void cmdVelCb(const geometry_msgs::Twist& data){
   // 
   left_speed = data.linear.x - data.angular.z * (wheelbase / 2);  // satuan m/s
   left_speed = left_speed * 119.366207319;                        // satuan rpm
-  String val(left_speed);
-  String res("Kiri = " + val);
-  nh.loginfo(val.c_str());
   motor_kiri.change_sp(left_speed);
   right_speed = data.linear.x + data.angular.z * (wheelbase / 2); // satuan m/s
   right_speed = right_speed * 119.366207319;                      // satuan rpm
-  String val_r(right_speed);
-  String res2("Kanan = "+ val_r);
-  nh.loginfo(res2.c_str());
   motor_kanan.change_sp(right_speed);
+  
+  // Start - Debug
+  
+  // String val(left_speed);
+  // String res("Kiri = " + val);
+  // nh.loginfo(val.c_str());
+  // String val_r(right_speed);
+  // String res2("Kanan = "+ val_r);
+  // nh.loginfo(res2.c_str());
+
+  // End - Debug
 }
 
 // Start: IMU Functions
